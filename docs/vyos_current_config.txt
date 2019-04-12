@@ -1,0 +1,98 @@
+interfaces {
+     ethernet eth0 {
+         address 192.168.2.1/24
+         duplex auto
+         hw-id 52:54:00:62:fc:4a
+         smp-affinity auto
+         speed auto
+     }
+     ethernet eth1 {
+         address 192.168.20.1/24
+         duplex auto
+         hw-id 52:54:00:b3:4a:1d
+         smp-affinity auto
+         speed auto
+     }
+     ethernet eth2 {
+         address 12.147.133.113/27
+         duplex auto
+         hw-id 52:54:00:5e:be:31
+         smp-affinity auto
+         speed auto
+     }
+     loopback lo {
+     }
+ }
+ nat {
+     source {
+         rule 2 {
+             outbound-interface eth2
+             source {
+                 address 192.168.2.0/24
+             }
+             translation {
+                 address masquerade
+             }
+         }
+         rule 10 {
+             outbound-interface eth2
+             source {
+                 address 192.168.10.0/24
+             }
+             translation {
+                 address masquerade
+             }
+         }
+     }
+ }
+ protocols {
+     static {
+         route 0.0.0.0/0 {
+             next-hop 12.147.133.97 {
+             }
+         }
+     }
+ }
+ service {
+     ssh {
+     }
+ }
+ system {
+     config-management {
+         commit-revisions 100
+     }
+     console {
+         device ttyS0 {
+             speed 9600
+         }
+     }
+     host-name vyos
+     login {
+         user vyos {
+             authentication {
+YXYm9k.7syryEopAdjLIUmFkOyy14E/emDF1ZuiIZ2ytLCcTdMW/Yp1
+                 plaintext-password ""
+             }
+             level admin
+         }
+     }
+     ntp {
+         server 0.pool.ntp.org {
+         }
+         server 1.pool.ntp.org {
+         }
+         server 2.pool.ntp.org {
+         }
+     }
+     syslog {
+         global {
+             facility all {
+                 level info
+             }
+             facility protocols {
+                 level debug
+             }
+         }
+     }
+     time-zone UTC
+ }

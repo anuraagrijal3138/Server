@@ -1,0 +1,5 @@
+Configuration script for pw set:
+#cloud-config
+password: mypassword
+chpasswd: { expire: False }
+ssh_pwauth: True

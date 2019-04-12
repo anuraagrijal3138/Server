@@ -1,0 +1,8 @@
+virt-install --name=vyos \
+--memory=2048 --vcpus=1 \
+--cdrom=/var/lib/libvirt/images/vyos.iso \
+--disk /local-storage-pool-1/vyos.qcow2,device=disk,format=qcow2,bus=virtio,size=8 \
+--os-type=linux  \
+--nographics \
+--check all=off
+

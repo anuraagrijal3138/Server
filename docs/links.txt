@@ -1,0 +1,17 @@
+Cinder+ceph
+https://swamireddy.wordpress.com/2016/12/19/cinder-and-ceph-multi-back-end/
+
+Glance+ceph
+https://www.stratoscale.com/blog/storage/integrating-ceph-storage-openstack-step-step-guide/
+
+Primary affinity : https://ceph.com/geen-categorie/ceph-get-the-best-of-your-ssd-with-primary-affinity/
+
+
+The placement of a specific object can be found using:
+
+ceph osd map {pool-name} {object-name}
+If you want to check a map of all the object you can do that by looking at the placement group dump(consider your own info to be displayed):
+
+ceph pg dump | awk  '{print $1 "\t" $2 "\t" $15 "\t" $16}'
+Regarding the OSD, you can consider an OSD any type of logical of physical storage unit(folder/partition/Logical Volume/disk/LUN)
+
