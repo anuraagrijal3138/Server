@@ -1,0 +1,81 @@
+JUJU before deploy:
+Juju bootstrap aib-maas aib-cloud-controller
+Juju deploy bundle.yaml
+
+[ neutron-api ]
+Change overlay_network_type from gre to vxlan
+
+[ netron-gateway ]
+Give dns server as 8.8.8.8
+
+VNC config:
+juju ssh nova-cloud-controller/0
+sudo apt install nova-novncproxy
+sudo apt install nova-consoleauth
+
+Compute nodes:
+vnc_enabled=True
+novncproxy_base_url=http://{{ nova-cloud-controller-ip(LXD) }}:6080/vnc_auto.html
+vncserver_listen=0.0.0.0
+vncserver_proxyclient_address={{compute-node-ip}}
+
+Cloud-controller node:
+novncproxy_host=0.0.0.0
+novncproxy_port=6080
+novncproxy_base_url=http://{{ nova-cloud-controller-ip(LXD) }}:6080/vnc_auto.html
+
+block_device_allocate_retries = 1200
+block_device_allocate_retries_interval = 2
+
+juju ssh nova-compute/0 sudo service nova-compute restart
+juju ssh nova-compute/1 sudo service nova-compute restart
+juju ssh nova-compute/2 sudo service nova-compute restart
+
+More configs:
+curl http://cloud-images.ubuntu.com/xenial/current/xenial-server-cloudimg-amd64-disk1.img | \
+       openstack image create --public --container-format=bare --disk-format=qcow2 xenial
+
+./neutron-ext-net-ksv3 --network-type flat -g 172.16.20.1 -c 172.16.20.0/24 -f 172.16.20.50:172.16.20.150 ext_net
+
+openstack keypair create --public-key ~/.ssh/id_rsa.pub mykey
+
+Openstack security group list
+
+openstack security group rule create <uuid> --protocol icmp --remote-ip 0.0.0.0/0
+
+openstack security group rule create <security-group-name> --protocol tcp --remote-ip 0.0.0.0/0 --dst-port 22
+Ceph OSDs create:
+vgcreate ceph-block-0 /dev/sdd
+vgcreate ceph-block-1 /dev/sde
+vgcreate ceph-block-2 /dev/sdf
+
+lvcreate -l 100%FREE -n block-0 ceph-block-0
+lvcreate -l 100%FREE -n block-1 ceph-block-1
+lvcreate -l 100%FREE -n block-2 ceph-block-2
+
+vgcreate ceph-db-0 /dev/sdc
+lvcreate -L 100GB -n db-0 ceph-db-0
+lvcreate -L 100GB -n db-1 ceph-db-0
+lvcreate -L 100GB -n db-2 ceph-db-0
+
+ceph-volume lvm create --bluestore --data ceph-block-0/block-0 --block.db ceph-db-0/db-0
+ceph-volume lvm create --bluestore --data ceph-block-1/block-1 --block.db ceph-db-0/db-1
+ceph-volume lvm create --bluestore --data ceph-block-2/block-2 --block.db ceph-db-0/db-2
+
+[If partition ssd for WAL]
+vgcreate ceph-wal-0 /dev/sdg
+lvcreate -L 100GB -n wal-0 ceph-wal-0
+lvcreate -L 100GB -n wal-1 ceph-wal-0
+lvcreate -L 100GB -n wal-2 ceph-wal-0
+
+ceph-volume lvm create --bluestore --data ceph-block-0/block-0 --block.db ceph-db-0/db-0 --block.wal ceph-wal-0/wal-0
+ceph-volume lvm create --bluestore --data ceph-block-1/block-1 --block.db ceph-db-0/db-1 --block.wal ceph-wal-0/wal-1
+ceph-volume lvm create --bluestore --data ceph-block-2/block-2 --block.db ceph-db-0/db-2 --block.wal ceph-wal-0/wal-2
+
+ceph osd pool set <pool-name> compression_algorithm { lz4, snappy, zlib, zstd }
+ceph osd pool set <pool-name> compression_mode { none, passive, aggressive, force }
+ceph osd pool set <pool-name> compression_required_ratio { 0.85 }
+ceph osd pool set <pool-name> compression_min_blob_size( hdd, ssd)
+ceph osd pool set <pool-name> compression_max_blob_size ( hdd, ssd)
+
+
